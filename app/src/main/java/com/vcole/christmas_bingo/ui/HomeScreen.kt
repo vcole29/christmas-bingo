@@ -14,7 +14,7 @@ import com.vcole.christmas_bingo.viewmodel.BingoViewModel
 @Composable
 fun HomeScreen(
     viewModel: BingoViewModel,
-    onNavigateToGame: () -> Unit,
+    onStartGame: () -> Unit,           // Changed name to match NavGraph expectation
     onNavigateToSettings: () -> Unit
 ) {
     // Connect to the ViewModel state
@@ -41,7 +41,9 @@ fun HomeScreen(
 
         // Theme Selection Card
         Card(
-            modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 16.dp)
         ) {
             Column(Modifier.padding(8.dp)) {
                 themes.forEach { text ->
@@ -74,8 +76,10 @@ fun HomeScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         Button(
-            onClick = onNavigateToGame,
-            modifier = Modifier.fillMaxWidth().height(56.dp)
+            onClick = { onStartGame() },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp)
         ) {
             Text("START GAME", fontSize = 18.sp)
         }

@@ -1,6 +1,5 @@
 package com.vcole.christmas_bingo.ui
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -16,6 +15,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.vcole.christmas_bingo.viewmodel.BingoViewModel
+import com.vcole.christmas_bingo.viewmodel.BingoUIState
 
 @Composable
 fun GameScreen(
@@ -23,10 +23,7 @@ fun GameScreen(
     onNavigateBack: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
-
-    val dummyWords = remember {
-        List(25) { i -> "Item ${i + 1}" }
-    }
+    val realWords = viewModel.gameWords
 
     Column(
         modifier = Modifier
@@ -40,38 +37,81 @@ fun GameScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Button(onClick = onNavigateBack) { Text("Exit") }
-            Text(text = uiState.currentTheme, style = MaterialTheme.typography.titleMedium)
+            Button(
+                onClick = onNavigateBack,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (uiState.isHighContrast) Color.Black else MaterialTheme.colorScheme.primary
+                )
+            ) {
+                Text("Exit", color = Color.White)
+            }
+            Text(
+                text = uiState.currentTheme,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
         }
 
         Text(
             text = "Christmas Bingo",
             style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(vertical = 16.dp)
+            modifier = Modifier.padding(vertical = 16.dp),
+            color = if (uiState.isHighContrast) Color.Black else MaterialTheme.colorScheme.onBackground
         )
 
-        // The 5x5 Grid
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(5), // 5 columns
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(1f) // Makes the grid a square
-                .border(2.dp, Color.Gray),
-            contentPadding = PaddingValues(4.dp)
-        ) {
-            items(25) { index ->
-                BingoCell(
-                    word = dummyWords[index],
-                    isMarked = uiState.selectedWords.contains(index),
-                    onCellClick = { viewModel.toggleCell(index) }
+        if (realWords.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1f),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(
+                    color = if (uiState.isHighContrast) Color.Black else Color(0xFF2E7D32)
                 )
+            }
+        } else {
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(5),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1f)
+                    .border(2.dp, if (uiState.isHighContrast) Color.Black else Color.Gray),
+                contentPadding = PaddingValues(4.dp)
+            ) {
+                items(25) { index ->
+                    val wordDisplay = if (index < realWords.size) realWords[index] else ""
+
+                    BingoCell(
+                        word = wordDisplay,
+                        isMarked = uiState.selectedWords.contains(index),
+                        uiState = uiState, // Pass state for contrast check
+                        onCellClick = { viewModel.toggleCell(index) }
+                    )
+                }
             }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
         if (uiState.isGameOver) {
-            Text("🎉 BINGO! 🎉", fontSize = 32.sp, fontWeight = FontWeight.Bold, color = Color.Red)
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = "🎊 BINGO! 🎊",
+                    fontSize = 36.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = if (uiState.isHighContrast) Color.Black else Color(0xFFD32F2F)
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(
+                    onClick = { viewModel.resetGame() },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (uiState.isHighContrast) Color.Black else MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Text("Play Again", color = Color.White)
+                }
+            }
         }
     }
 }
@@ -80,16 +120,32 @@ fun GameScreen(
 fun BingoCell(
     word: String,
     isMarked: Boolean,
+    uiState: BingoUIState,
     onCellClick: () -> Unit
 ) {
+    // Logic for accessibility colors
+    val cellColor = when {
+        isMarked && uiState.isHighContrast -> Color.Yellow
+        isMarked -> Color(0xFF2E7D32) // Christmas Green
+        uiState.isHighContrast -> Color.White
+        else -> MaterialTheme.colorScheme.surfaceVariant
+    }
+
+    val textColor = when {
+        uiState.isHighContrast -> Color.Black
+        isMarked -> Color.White
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
     Card(
         modifier = Modifier
             .padding(2.dp)
-            .aspectRatio(1f) // Square cells
-            .clickable { onCellClick() },
+            .aspectRatio(1f)
+            .clickable { onCellClick() }
+            .then(if (uiState.isHighContrast) Modifier.border(1.dp, Color.Black) else Modifier),
         colors = CardDefaults.cardColors(
-            containerColor = if (isMarked) Color(0xFF2E7D32) else MaterialTheme.colorScheme.surfaceVariant,
-            contentColor = if (isMarked) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+            containerColor = cellColor,
+            contentColor = textColor
         )
     ) {
         Box(
@@ -99,6 +155,7 @@ fun BingoCell(
             Text(
                 text = word,
                 fontSize = 10.sp,
+                fontWeight = if (uiState.isHighContrast) FontWeight.ExtraBold else FontWeight.Medium,
                 textAlign = TextAlign.Center,
                 lineHeight = 12.sp,
                 modifier = Modifier.padding(2.dp)

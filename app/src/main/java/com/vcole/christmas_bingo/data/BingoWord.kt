@@ -1,3 +1,5 @@
+package com.vcole.christmas_bingo.data
+
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 

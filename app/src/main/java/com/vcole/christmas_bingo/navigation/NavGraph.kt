@@ -1,32 +1,50 @@
 package com.vcole.christmas_bingo.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.bingoapp.navigation.BingoScreen
 import com.vcole.christmas_bingo.ui.HomeScreen
 import com.vcole.christmas_bingo.ui.GameScreen
 import com.vcole.christmas_bingo.ui.SettingsScreen
 import com.vcole.christmas_bingo.viewmodel.BingoViewModel
+import com.vcole.christmas_bingo.viewmodel.BingoViewModelFactory
 
 @Composable
-fun BingoNavGraph(viewModel: BingoViewModel = viewModel()) {
+fun BingoNavGraph(factory: BingoViewModelFactory) {
+    val viewModel: BingoViewModel = viewModel(factory = factory)
     val navController = rememberNavController()
 
-    NavHost(navController = navController, startDestination = BingoScreen.Home.route) {
-        composable(BingoScreen.Home.route) {
-            HomeScreen(viewModel,
-                onNavigateToGame = { navController.navigate(BingoScreen.Game.route) },
-                onNavigateToSettings = { navController.navigate(BingoScreen.Settings.route) }
+    // NEW: Seed the database the moment the app is opened
+    LaunchedEffect(Unit) {
+        viewModel.seedDatabase()
+    }
+
+    NavHost(navController = navController, startDestination = "home") {
+        composable("home") {
+            HomeScreen(
+                viewModel = viewModel,
+                onStartGame = {
+                    // NEW: Tell the ViewModel to fetch words from DB before navigating
+                    viewModel.loadWords()
+                    navController.navigate("game")
+                },
+                onNavigateToSettings = { navController.navigate("settings") }
             )
         }
-        composable(BingoScreen.Game.route) {
-            GameScreen(viewModel, onNavigateBack = { navController.popBackStack() })
+        composable("game") {
+            GameScreen(
+                viewModel = viewModel,
+                onNavigateBack = { navController.popBackStack() }
+            )
         }
-        composable(BingoScreen.Settings.route) {
-            SettingsScreen(viewModel, onNavigateBack = { navController.popBackStack() })
+        composable("settings") {
+            SettingsScreen(
+                viewModel = viewModel,
+                onNavigateBack = { navController.popBackStack() }
+            )
         }
     }
 }

@@ -9,6 +9,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.vcole.christmas_bingo.viewmodel.BingoViewModel
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -16,6 +20,8 @@ fun SettingsScreen(
     viewModel: BingoViewModel,
     onNavigateBack: () -> Unit
 ) {
+    val uiState by viewModel.uiState.collectAsState()
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -37,16 +43,38 @@ fun SettingsScreen(
         ) {
             Text(
                 text = "Accessibility",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary
+                style = MaterialTheme.typography.titleLarge,
+                color = if (uiState.isHighContrast) Color.Black else MaterialTheme.colorScheme.primary
             )
 
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text("High Contrast Mode")
-                    Text(
-                        "Coming soon: Optimizes colors for better visibility.",
-                        style = MaterialTheme.typography.bodySmall
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (uiState.isHighContrast) Color.Yellow else MaterialTheme.colorScheme.surfaceVariant
+                )
+            ) {
+                Row(
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            "High Contrast Mode",
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Black
+                        )
+                        Text(
+                            "Makes the game easier to read with bold colors.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.Black
+                        )
+                    }
+                    Switch(
+                        checked = uiState.isHighContrast,
+                        onCheckedChange = { viewModel.toggleHighContrast() }
                     )
                 }
             }
@@ -55,9 +83,12 @@ fun SettingsScreen(
 
             Button(
                 onClick = onNavigateBack,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (uiState.isHighContrast) Color.Black else MaterialTheme.colorScheme.primary
+                )
             ) {
-                Text("Save Settings")
+                Text("Save & Exit", color = if (uiState.isHighContrast) Color.White else MaterialTheme.colorScheme.onPrimary)
             }
         }
     }
